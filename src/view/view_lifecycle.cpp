@@ -832,7 +832,10 @@ namespace umbriel {
         targetOutput = scratchpadManager->presentationOutput(*rule.defaultScratchpad, targetOutput);
       }
 
-      setTiledState(wantTiled ? WLR_EDGE_TOP | WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT : 0);
+      // With prefer_no_csd, floating windows are told they are tiled too, so client decorations drop the rounded
+      // corners and shadows the border cannot follow.
+      const bool tiledEdges = wantTiled || config().appearance.preferNoCsd;
+      setTiledState(tiledEdges ? WLR_EDGE_TOP | WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT : 0);
 
       if (wantFullscreen) {
         // An X11 client can request fullscreen before its first buffer. The request event is too early to configure,
