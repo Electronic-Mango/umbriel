@@ -27,6 +27,7 @@
 #include "server/allocator.h"
 #include "server/backend_manager.h"
 #include "server/ipc.h"
+#include "server/syncobj_unmap_release.h"
 #include "server/wine_color_manager.h"
 #include "view/view.h"
 #include "wlr.h"
@@ -456,7 +457,8 @@ namespace umbriel {
       }
     }
 
-    if (drmFd >= 0 && m_renderer->features.timeline && m_backend->features.timeline) {
+    const bool explicitSync = drmFd >= 0 && m_renderer->features.timeline && m_backend->features.timeline;
+    if (explicitSync) {
       if (wlr_linux_drm_syncobj_manager_v1_create(m_display, 1, drmFd) == nullptr) {
         throw std::runtime_error("failed to create linux-drm-syncobj manager");
       }
@@ -475,6 +477,9 @@ namespace umbriel {
     resolveEffectSlot(m_cursorEffectSlot, EffectKind::Cursor);
     effectRegistry().prepare(m_renderer);
     m_compositor = wlr_compositor_create(m_display, 5, m_renderer);
+    if (explicitSync) {
+      m_syncobjUnmapRelease = std::make_unique<SyncobjUnmapRelease>(m_compositor);
+    }
     wlr_subcompositor_create(m_display);
     wlr_data_device_manager_create(m_display);
     if (wlr_primary_selection_v1_device_manager_create(m_display) == nullptr) {
@@ -887,6 +892,7 @@ namespace umbriel {
     }
     wl_display_destroy_clients(m_display);
     m_wineColorManager.reset();
+    m_syncobjUnmapRelease.reset();
     // Chrome components destroy scene nodes in their destructors, so they must go before the scene tree does; otherwise
     // the destructor body frees the nodes and the member destructors touch already-freed memory.
     m_quitConfirm.reset();
