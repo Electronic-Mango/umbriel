@@ -832,6 +832,8 @@ namespace umbriel {
         targetOutput = scratchpadManager->presentationOutput(*rule.defaultScratchpad, targetOutput);
       }
 
+      // With prefer_no_csd, floating windows are told they are tiled too, so client decorations drop the rounded
+      // corners and shadows the border cannot follow.
       const bool tiledEdges = wantTiled || config().appearance.preferNoCsd;
       setTiledState(tiledEdges ? WLR_EDGE_TOP | WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT : 0);
 
